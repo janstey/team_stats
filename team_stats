@@ -22,7 +22,7 @@ function jira-user-stats {
 }
 
 rm /tmp/total_commits.txt
-cat team_stats.github.full |
+cat team_stats.github |
 while read user
 do (
    commits=`github-user-stats $user`
