@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# set these before running
+MONTH1=2016-12
+MONTH2=2017-01
+MONTH3=2017-02
+JIRA_DATE_RANGE="resolutiondate%20>%3D%202016-12-01%20AND%20resolutiondate%20<%3D%202017-03-01"
+
+function github-user-stats {
+  rm -f /tmp/$1.txt
+  wget -q https://github.com/$1 -O /tmp/$1.txt 
+  if grep -q "https://github.com/$1" "/tmp/$1.txt"; then
+    cat /tmp/$1.txt | grep -e "data-date=\"$MONTH1" -e "data-date=\"$MONTH2" -e "data-date=\"$MONTH3" | sed 's/.*data-count=\"\([0-9]*\)\".*/\1/' | awk '{s+=$1} END {printf "%.0f", s}'
+  else
+    echo "No github data for $1"
+    exit 1
+  fi
+}
+
+function jira-user-stats {
+  curl -s -X GET -H "Content-Type: application/json" "https://issues.jboss.org/rest/api/2/search?jql=project%20in%20(ENTESB%2C%20OSFUSE%2C%20FUSEJON%2C%20ENTMQ)%20AND%20status%20in%20(Resolved%2C%20Closed)%20AND%20${JIRA_DATE_RANGE}%20AND%20assignee%20%3D%20${1}%20ORDER%20BY%20assignee%20ASC%2C%20\"GSS%20Priority\"%20ASC%2C%20updated%20DESC" | jq '.' | grep '^  "total": ' | sed 's/.*:\ \([0-9]*\),.*/\1/'
+}
+
+echo "user, commits" > /tmp/total_commits.txt
+cat team_stats.github |
+while read user
+do (
+   commits=`github-user-stats $user`
+   echo "$user, $commits"
+)
+done >> /tmp/total_commits.txt
+
+echo "==== Team stats from github ===="
+cat /tmp/total_commits.txt
+
+
+echo "user, issues" > /tmp/total_issues.txt
+cat team_stats.jira |
+while read user
+do (
+   issues=`jira-user-stats $user`
+   echo "$user, $issues"
+)
+done >> /tmp/total_issues.txt
+
+echo "==== Team stats from jira ===="
+cat /tmp/total_issues.txt
+
+
+
