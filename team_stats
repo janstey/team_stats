@@ -44,6 +44,7 @@ do (
 )
 done >> /tmp/total_issues.txt
 
+echo ""
 echo "==== Team stats from jira ===="
 printf "%-15s %-15s \n" "user" "issues"
 printf "%-15s %-15s \n" "----" "------"
